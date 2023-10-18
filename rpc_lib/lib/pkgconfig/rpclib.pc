@@ -1,0 +1,10 @@
+prefix=/workspaces/CSS501_Group1_Server/rpclib/rpc_lib
+exec_prefix=
+libdir=/workspaces/CSS501_Group1_Server/rpclib/rpc_lib/lib
+includedir=/workspaces/CSS501_Group1_Server/rpclib/rpc_lib/include
+
+Name: rpclib
+Description: rpclib is a msgpack-rpc library written using modern C++
+Version: 2.3.0
+Libs: -L${libdir} -l
+Cflags: -I${includedir} rpclib_cflags-NOTFOUND
