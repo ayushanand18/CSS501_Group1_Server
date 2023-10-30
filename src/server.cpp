@@ -33,3 +33,13 @@ public:
       this->size = size;
     }
 };
+
+class FileTransit{
+public:
+  string name;
+  string author;
+  string permissions;
+  size_t size;
+  // considering content as a text, will later generalise for all data types
+  string content;
+};
