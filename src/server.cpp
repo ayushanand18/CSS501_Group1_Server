@@ -76,3 +76,19 @@ public:
     bool checkFilePresent(string file_hash);
 };
 
+int main(int argc, char *argv[]) {
+  // Creating a server that listens on port 8080
+  rpc::server srv(8080);
+
+  Server serv_instance;
+  
+  srv.bind("upload", 
+  [&serv_instance](string name, string author, string permissions, unsigned int size, string content){ 
+    serv_instance.handleUpload(name, author, permissions, size, content); 
+  });
+
+  // Run the server loop.
+  srv.run();
+
+  return 0;
+}
