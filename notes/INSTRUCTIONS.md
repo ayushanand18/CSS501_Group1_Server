@@ -19,6 +19,6 @@ On Linux:
 
 ## Running
 > Execute these steps once you have installed using the above steps. You need to install only once!
-Now the library is fully installed on your machine. You will need to link it with the compiler during compilation (you will need to do each time you are compiling `main.cpp`).
-* `g++ src/client.cpp -o client.out -I/usr/local/include/rpc -L/usr/local/lib -lrpc -lpthread`
-* Run the executable now: `./main`
+Now the library is fully installed on your machine. You will need to link it with the compiler during compilation (you will need to do each time you are compiling `src/server.cpp`).
+* `g++ src/server.cpp -o src/server.out -I/usr/local/include/rpc -L/usr/local/lib -lrpc -lpthread`
+* Run the executable now: `./server.out`
