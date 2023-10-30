@@ -1,21 +1,14 @@
-#include "rpc/server.h"
+#include <vector>
+#include <string>
+#include <set>
+#include <unordered_map>
 #include <iostream>
+#include <functional>
+#include "rpc/server.h"
+using namespace std;
 
-void foo() { std::cout << "foo was called!" << std::endl; }
-
-int main(int argc, char *argv[]) {
-  // Creating a server that listens on port 8080
-  rpc::server srv(8080);
-
-  // Binding the name "foo" to free function foo.
-  // note: the signature is automatically captured
-  srv.bind("foo", &foo);
-
-  // Binding a lambda function to the name "add".
-  srv.bind("add", [](int a, int b) { return a + b; });
-
-  // Run the server loop.
-  srv.run();
-
-  return 0;
-}
+class ThreadPool {
+public:
+  // todo: implement a ThreadPool or get it from a library
+  //       for later work, multithreading is the last priority
+};
