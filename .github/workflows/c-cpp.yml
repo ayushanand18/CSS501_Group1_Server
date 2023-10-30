@@ -14,7 +14,11 @@ jobs:
     steps:
     - uses: actions/checkout@v3
     - name: configure
-      run: ./configure
+      run: |
+        cd rpc_lib/
+        sudo cp -rf include/rpc /usr/local/include/
+        sudo cp lib/librpc.a /usr/local/lib/
+        cd ..
     - name: make
       run: make
     # - name: make check
