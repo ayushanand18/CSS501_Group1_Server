@@ -4,6 +4,7 @@
 #include <unordered_map>
 #include <iostream>
 #include <functional>
+#include <fstream>
 #include "rpc/server.h"
 using namespace std;
 
@@ -44,6 +45,20 @@ public:
   string content;
 };
 
+vector<string> split(string s, string delimiter) {
+     size_t pos_start = 0, pos_end, delim_len = delimiter.length();
+    std::string token;
+    std::vector<std::string> res;
+
+    while ((pos_end = s.find(delimiter, pos_start)) != std::string::npos) {
+        token = s.substr (pos_start, pos_end - pos_start);
+        pos_start = pos_end + delim_len;
+        res.push_back (token);
+    }
+
+    res.push_back (s.substr (pos_start));
+    return res;
+}
 class Server{
 private:
     vector<string> server_ips;
@@ -52,16 +67,29 @@ private:
     unordered_map<string, string> file_hashes; // maps file_hash->file_id
     // own ThreadPool of threads to submit tasks to
     ThreadPool thread_exec;
+    unordered_map<string, string> user_ids;
 public:
     // constructor to setup things
     Server() {
         // init all server_ips, file_ids, file_table
         // attach signal handling to handleDownload and handleUpload function
+
+        // write some comments about the following lines
+        ifstream user_db("user_db.txt");
+        string line;
+        while(user_db >> line) {
+          vector<string> splitted = split(line, " ");
+          // name user_id passwd <- user_db.txt file
+          user_ids[splitted[1]] = splitted[2];
+        }
     }
     // function to check user with user_id present or not
     bool checkUserWithUserID(string user_id);
     // function to signin with user_id, password
-    bool signInWithUserIDPassword(string user_id, string password);
+    bool signInWithUserIDPassword(string user_id, string password) {
+      if(user_ids.count(user_id) && user_ids[user_id] == password) return true;
+      return false;
+    }
     // function to register with name, user_id, password
     bool registerWithUserIDPassword(string name, string user_id, string password);
     // function to replicate data across other servers, takes no argument and no return
@@ -70,7 +98,9 @@ public:
     // function to handleDownload
     void handleDownload(FileTransit dataOfUser);
     // function to handleUpload
-    void handleUpload(string name, string author, string permissions, unsigned int size, string content);
+    void handleUpload(string name, string author, string permissions, unsigned int size, string content) {
+
+    }
     // function to check if file with the hash is already present on server or not
     // in the file_hashes map
     bool checkFilePresent(string file_hash);
