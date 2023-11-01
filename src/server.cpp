@@ -61,6 +61,8 @@ public:
     Server() {
         // init all server_ips, file_ids, file_table
         // attach signal handling to handleDownload and handleUpload function
+
+        // write some comments about the following lines
         ofstream user_db("user_db.txt");
         string line;
         while(user_db >> line) {
@@ -85,7 +87,7 @@ public:
     void handleDownload(FileTransit dataOfUser);
     // function to handleUpload
     void handleUpload(string name, string author, string permissions, unsigned int size, string content) {
-      
+
     }
     // function to check if file with the hash is already present on server or not
     // in the file_hashes map
