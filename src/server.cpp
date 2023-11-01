@@ -75,7 +75,7 @@ public:
         // attach signal handling to handleDownload and handleUpload function
 
         // write some comments about the following lines
-        ofstream user_db("user_db.txt");
+        ifstream user_db("user_db.txt");
         string line;
         while(user_db >> line) {
           vector<string> splitted = split(line, " ");
