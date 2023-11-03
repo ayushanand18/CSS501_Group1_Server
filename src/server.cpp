@@ -65,6 +65,8 @@ private:
     // own ThreadPool of threads to submit tasks to
     ThreadPool thread_exec;
     unordered_map<string, string> user_ids;
+    // function to get content of a file
+    // conteibuted by @Ajay
     std::string __getFileContent(string filepath) {
       std::ifstream file(filepath);
       std::stringstream content;
