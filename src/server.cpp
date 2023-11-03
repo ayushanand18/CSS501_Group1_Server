@@ -78,6 +78,7 @@ private:
     bool __checkUserWithUserID(string user_id) {
       return user_ids.count(user_id);
     }
+    // function to generate fileID from content of file
     string __getFileID(string content) {
       unsigned char digest[MD5_DIGEST_LENGTH];
       MD5((const unsigned char*)input.c_str(), input.length(), digest);
