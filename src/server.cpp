@@ -90,10 +90,7 @@ private:
 public:
     // constructor to setup things
     Server() {
-        // init all server_ips, file_ids, file_table
-        // attach signal handling to handleDownload and handleUpload function
-
-        // write some comments about the following lines
+        // update the user logins in the server using FS based database
         ifstream user_db("user_db.txt");
         string line;
         while(user_db >> line) {
@@ -151,7 +148,7 @@ int main(int argc, char *argv[]) {
 
   Server serv_instance;
   
-  srv.bind("signin", 
+  srv.bind("signin",
   [&serv_instance](string user_id, string password){
     return serv_instance.signInWithUserIDPassword(user_id, password);
   });
