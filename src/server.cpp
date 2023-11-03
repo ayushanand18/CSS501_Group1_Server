@@ -1,3 +1,7 @@
+// server functions and class definitions
+// all works contributed arre annotated with an '@' before the functions
+// in case of no annotation, it is contributed by original author '@ayushanand18'
+
 #include <vector>
 #include <string>
 #include <set>
@@ -128,6 +132,7 @@ public:
     }
     // function to replicate data across other servers, takes no argument and no return
     // must register this as a periodic event (cron job)
+    // @TODO
     void replicateDataAcrossServer() {};
     // function to handleDownload
     string handleDownload(string file_id) {
