@@ -35,16 +35,6 @@ public:
     }
 };
 
-class FileTransit{
-public:
-  string name;
-  string author;
-  string permissions;
-  size_t size;
-  // considering content as a text, will later generalise for all data types
-  string content;
-};
-
 // function to split a string based on a particular delimeter
 // contributed by @Amit
 vector<string> split(string s, string delimiter) {
