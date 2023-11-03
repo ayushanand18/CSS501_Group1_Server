@@ -45,8 +45,10 @@ public:
   string content;
 };
 
+// function to split a string based on a particular delimeter
+// contributed by @Amit
 vector<string> split(string s, string delimiter) {
-     size_t pos_start = 0, pos_end, delim_len = delimiter.length();
+    size_t pos_start = 0, pos_end, delim_len = delimiter.length();
     std::string token;
     std::vector<std::string> res;
 
@@ -84,14 +86,28 @@ public:
         }
     }
     // function to check user with user_id present or not
-    bool checkUserWithUserID(string user_id);
+    bool checkUserWithUserID(string user_id) {
+      return user_ids.count(user_id);
+    }
     // function to signin with user_id, password
     bool signInWithUserIDPassword(string user_id, string password) {
       if(user_ids.count(user_id) && user_ids[user_id] == password) return true;
       return false;
     }
     // function to register with name, user_id, password
-    bool registerWithUserIDPassword(string name, string user_id, string password);
+    // contributed by @Ajay
+    bool registerWithUserIDPassword(string name, string user_id, string password) {
+      if (!checkUserWithUserID(user_id)) {
+        user_ids[user_id] = password;
+        ofstream user_db("user_db.txt", ios::app);
+        if (user_db.is_open()) {
+          user_db << name << " " << user_id << " " << password << "\n";
+          user_db.close();
+          return true;
+        }
+      }
+      return false;
+    }
     // function to replicate data across other servers, takes no argument and no return
     // must register this as a periodic event (cron job)
     void replicateDataAcrossServer();
