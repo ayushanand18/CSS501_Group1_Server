@@ -220,13 +220,14 @@ public:
   {
     // hash the content and generate a fileId
     string file_id = __getFileID(content);
-    string location_on_disc = "/uploaded_files/" + file_id + "-" + name;
+    string location_on_disc = "uploaded_files/" + file_id + "-" + name;
     std::time_t end_time = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
     string curr_time = std::ctime(&end_time);
 
     ServerFile new_file(name, file_id, author, location_on_disc, curr_time, size, 0, permissions);
     file_table[file_id] = new_file;
     ofstream write_file(location_on_disc);
+    cout << "[log] upload saved at: "<< location_on_disc << endl;
     write_file << content;
   }
   // function to check if file with the hash is already present on server or not
