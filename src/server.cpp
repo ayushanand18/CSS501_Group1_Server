@@ -94,7 +94,7 @@ private:
           ss << std::hex << std::setw(2) << std::setfill('0') << (int)digest[i];
       }
       string res_file_id = ss.str();
-      if(res_file_id>20) {
+      if(res_file_id.size() > 20) {
         res_file_id = res_file_id.substr(0, 20);
       }
       return res_file_id;
@@ -135,6 +135,9 @@ public:
     // function to replicate data across other servers, takes no argument and no return
     // must register this as a periodic event (cron job)
     // @TODO
+    unordered_map<string, File> showFilesList() {
+      return file_table;
+    }
     void replicateDataAcrossServer() {};
     // function to handleDownload
     string handleDownload(string file_id) {
@@ -161,7 +164,9 @@ public:
     }
     // function to check if file with the hash is already present on server or not
     // in the file_hashes map
-    bool checkFilePresent(string file_hash) {};
+    bool checkFilePresent(string file_hash) {
+      return false;
+    }
 };
 
 int main(int argc, char *argv[]) {
@@ -188,6 +193,11 @@ int main(int argc, char *argv[]) {
   srv.bind("download",
   [&serv_instance](string file_id){ 
     return serv_instance.handleDownload(file_id); 
+  });
+
+  srv.bind("get_files_list",
+  [&serv_instance]() {
+    return serv_instance.showFilesList();
   });
   
 
