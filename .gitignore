@@ -30,3 +30,6 @@
 *.out
 *.app
 .vscode
+
+test*
+user_db.txt
