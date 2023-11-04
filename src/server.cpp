@@ -237,7 +237,7 @@ public:
   }
   // function to check if access is given to the user_id, file_id
   bool checkAccess(string user_id, string file_id) {
-    vector<string> splitted_data = split(file_table[file_id].access_to, " ")
+    vector<string> splitted_data = split(file_table[file_id].access_to, " ");
     if(file_table[file_id].access_to == "*" or find(splitted_data.begin(), splitted_data.end(), user_id) != splitted_data.end())
       return true;
     return false;
