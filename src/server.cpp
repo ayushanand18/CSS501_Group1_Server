@@ -185,6 +185,7 @@ int main(int argc, char *argv[]) {
 
   Server serv_instance;
   
+  // API contracts
   srv.bind("signin",
   [&serv_instance](string user_id, string password){
     return serv_instance.signInWithUserIDPassword(user_id, password);
