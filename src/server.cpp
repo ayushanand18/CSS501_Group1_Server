@@ -132,12 +132,22 @@ public:
       }
       return false;
     }
-    // function to replicate data across other servers, takes no argument and no return
-    // must register this as a periodic event (cron job)
-    // @TODO
-    unordered_map<string, File> showFilesList() {
+    // function to return list of files on server
+    unordered_map<string, File> getFilesList() {
       return file_table;
     }
+    // function to return list of users (names, userIDs)
+    vector<pair<string, string>> getUserList() {
+      vector<pair<string, string>> user_list;
+      ifstream users("user_db.txt");
+      while( users >> line) {
+        auto splitted_data = split(line, " ");
+        user_list.append({splitted_data[0], splitted_data[1]});
+      }
+      return user_list;
+    }
+    // function to replicate data across other servers, takes no argument and no return
+    // must register this as a periodic event (cron job)
     void replicateDataAcrossServer() {};
     // function to handleDownload
     string handleDownload(string file_id) {
@@ -197,9 +207,13 @@ int main(int argc, char *argv[]) {
 
   srv.bind("get_files_list",
   [&serv_instance]() {
-    return serv_instance.showFilesList();
+    return serv_instance.getFilesList();
   });
   
+  srv.bind("get_users_list",
+  [&serv_instance](){
+    return serv_instance.getUserList();
+  });
 
   // Run the server loop.
   srv.run();
