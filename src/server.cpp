@@ -147,7 +147,7 @@ public:
     // update the user logins in the server using FS based database
     ifstream user_db("user_db.txt");
     string line;
-    while (user_db >> line)
+    while (getline(user_db, line))
     {
       vector<string> splitted = split(line, " ");
       // name user_id passwd <- user_db.txt file
@@ -191,7 +191,7 @@ public:
     vector<pair<string, string>> user_list;
     ifstream users("user_db.txt");
     string line;
-    while (users >> line)
+    while (getline(users, line))
     {
       auto splitted_data = split(line, " ");
       user_list.push_back({splitted_data[0], splitted_data[1]});
@@ -249,36 +249,44 @@ int main(int argc, char *argv[])
   srv.bind("signin",
            [&serv_instance](string user_id, string password)
            {
+             cout << "[log] **signin**: request (" << user_id << ")" << endl;
              return serv_instance.signInWithUserIDPassword(user_id, password);
            });
 
   srv.bind("register",
            [&serv_instance](string name, string user_id, string password)
            {
+             cout << "[log] **register**: request (" << name << ", " << user_id << ", ###)" << endl;
              return serv_instance.registerWithUserIDPassword(name, user_id, password);
            });
 
   srv.bind("upload",
            [&serv_instance](string name, string author, string permissions, unsigned int size, string content)
            {
+             cout << "[log] **upload**: request (" << name << ", " << author << ", " << permissions
+                  << ", " << size << ", "
+                  << "###)" << endl;
              serv_instance.handleUpload(name, author, permissions, size, content);
            });
 
   srv.bind("download",
            [&serv_instance](string file_id)
            {
+             cout << "[log] **download**: request (" << file_id << ")" << endl;
              return serv_instance.handleDownload(file_id);
            });
 
   srv.bind("get_files_list",
            [&serv_instance]()
            {
+            cout << "[log] **get_files_list**: request" << endl;
              return serv_instance.getFilesList();
            });
 
   srv.bind("get_users_list",
            [&serv_instance]()
            {
+            cout << "[log] **get_users_list**: request" << endl;
              return serv_instance.getUserList();
            });
 
