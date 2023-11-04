@@ -1,5 +1,6 @@
 # CSS501_Group1_Server
 [![Tests CI](https://github.com/ayushanand18/CSS501_Group1_Server/actions/workflows/c-cpp.yml/badge.svg)](https://github.com/ayushanand18/CSS501_Group1_Server/actions/workflows/c-cpp.yml)
+
 Server Code for Group1 mini-project submission as a part of CSS501 Lab
 
 ## Pre-Requisites
