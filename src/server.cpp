@@ -2,6 +2,7 @@
 // all works contributed arre annotated with an '@' before the functions
 // in case of no annotation, it is contributed by original author '@ayushanand18'
 
+#include <chrono>
 #include <vector>
 #include <string>
 #include <set>
@@ -85,7 +86,7 @@ private:
       return user_ids.count(user_id);
     }
     // function to generate fileID from content of file
-    string __getFileID(string content) {
+    string __getFileID(string input) {
       unsigned char digest[MD5_DIGEST_LENGTH];
       MD5((const unsigned char*)input.c_str(), input.length(), digest);
 
@@ -140,9 +141,10 @@ public:
     vector<pair<string, string>> getUserList() {
       vector<pair<string, string>> user_list;
       ifstream users("user_db.txt");
+      string line;
       while( users >> line) {
         auto splitted_data = split(line, " ");
-        user_list.append({splitted_data[0], splitted_data[1]});
+        user_list.push_back({splitted_data[0], splitted_data[1]});
       }
       return user_list;
     }
