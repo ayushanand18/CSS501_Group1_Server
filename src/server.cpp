@@ -303,6 +303,8 @@ int main(int argc, char *argv[])
     return serv_instance.checkAccess(user_id, file_id);
   });
 
+  srv.bind("ping", [&]() -> bool { return true; });
+
   // Run the server loop.
   srv.run();
 
