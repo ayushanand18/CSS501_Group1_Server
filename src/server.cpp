@@ -16,11 +16,31 @@
 #include "rpc/server.h"
 using namespace std;
 
+// function to return current data and time
+std::string return_current_time_and_date()
+{
+  auto now = std::chrono::system_clock::now();
+  auto in_time_t = std::chrono::system_clock::to_time_t(now);
+
+  std::stringstream ss;
+  ss << std::put_time(std::localtime(&in_time_t), "%Y-%m-%d %X");
+  return ss.str();
+}
+
+// function to print logs on STDOUT as well as LOG_FILE
+void LOG_SERVICE(string log_type, string log)
+{
+  static ofstream logFile("LOG_FILE.txt");
+  string curr_time = return_current_time_and_date();
+  logFile << log_type << " [" << curr_time << "] " << log << endl;
+  cout << log_type << " [" << curr_time << "] " << log << endl;
+}
+
 class ThreadPool
 {
 public:
-  // TODO: implement a ThreadPool or get it from a library
-  //       for later work, multithreading is the last priority
+  // UPDATE: we do not need to implement our own ThreadPool
+  // because RPCLib supports it natively.
 };
 
 class ServerFile
@@ -109,6 +129,7 @@ private:
     }
     else
     {
+      LOG_SERVICE("ERR", "Unable to open file at " + filepath);
       throw std::runtime_error("Unable to open file: " + filepath);
     }
 
@@ -142,8 +163,6 @@ public:
   // constructor to setup things
   Server()
   {
-    // acknowldge that server is running
-    cout << "[log] Running server..." << endl;
     // update the user logins in the server using FS based database
     ifstream user_db("user_db.txt");
     string line;
@@ -153,6 +172,10 @@ public:
       // name user_id passwd <- user_db.txt file
       user_ids[splitted[1]] = splitted[2];
     }
+  }
+
+  ~Server() {
+    LOG_SERVICE("INFO", "SHUTDOWN\n");
   }
 
   // function to signin with user_id, password
@@ -211,7 +234,7 @@ public:
     }
     else
     {
-      cout << "[log] File resquest for {" << file_id << "}: File not found!" << endl;
+      LOG_SERVICE("ERR", "File resquest for {" + file_id + "}: File not found!");
       return "404: NOT FOUND";
     }
   }
@@ -221,13 +244,12 @@ public:
     // hash the content and generate a fileId
     string file_id = __getFileID(content);
     string location_on_disc = "uploaded_files/" + file_id + "-" + name;
-    std::time_t end_time = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
-    string curr_time = std::ctime(&end_time);
+    string curr_time = return_current_time_and_date();
 
     ServerFile new_file(name, file_id, author, location_on_disc, curr_time, size, 0, permissions);
     file_table[file_id] = new_file;
     ofstream write_file(location_on_disc);
-    cout << "[log] upload saved at: "<< location_on_disc << endl;
+    LOG_SERVICE("INFO", "upload saved at: " + location_on_disc);
     write_file << content;
   }
   // function to check if file with the hash is already present on server or not
@@ -237,9 +259,10 @@ public:
     return false;
   }
   // function to check if access is given to the user_id, file_id
-  bool checkAccess(string user_id, string file_id) {
+  bool checkAccess(string user_id, string file_id)
+  {
     vector<string> splitted_data = split(file_table[file_id].access_to, " ");
-    if(file_table[file_id].access_to == "*" or find(splitted_data.begin(), splitted_data.end(), user_id) != splitted_data.end())
+    if (file_table[file_id].access_to == "*" or find(splitted_data.begin(), splitted_data.end(), user_id) != splitted_data.end())
       return true;
     return false;
   }
@@ -247,66 +270,74 @@ public:
 
 int main(int argc, char *argv[])
 {
-  cout << "[log] Setting things up..." << endl;
+  LOG_SERVICE("INFO", "SETTING UP SERVER: Runtime Loaded, initializing objects.");
   // Creating a server that listens on port 8080
   rpc::server srv(8080);
 
   Server serv_instance;
 
+  LOG_SERVICE("INFO", "RUNNING: Running server at 8080...");
   // API contracts
   srv.bind("signin",
            [&serv_instance](string user_id, string password)
            {
-             cout << "[log] **signin**: request (" << user_id << ")" << endl;
+             LOG_SERVICE("INFO", "SIGNIN: request (" + user_id + ")");
              return serv_instance.signInWithUserIDPassword(user_id, password);
            });
 
   srv.bind("register",
            [&serv_instance](string name, string user_id, string password)
            {
-             cout << "[log] **register**: request (" << name << ", " << user_id << ", ###)" << endl;
+             LOG_SERVICE("INFO", "REGISTER: request (" + name + ", " + user_id + ", ###)");
              return serv_instance.registerWithUserIDPassword(name, user_id, password);
            });
 
   srv.bind("upload",
            [&serv_instance](string name, string author, string permissions, unsigned int size, string content)
            {
-             cout << "[log] **upload**: request (" << name << ", " << author << ", " << permissions
-                  << ", " << size << ", "
-                  << "###)" << endl;
+             LOG_SERVICE("INFO", "UPLOAD: request (" + name + ", " + author + ", " + permissions + ", " + to_string(size) + ", " + "###)");
              serv_instance.handleUpload(name, author, permissions, size, content);
            });
 
   srv.bind("download",
            [&serv_instance](string file_id)
            {
-             cout << "[log] **download**: request (" << file_id << ")" << endl;
+             LOG_SERVICE("INFO", "DOWNLOAD: (" + file_id + ")");
              return serv_instance.handleDownload(file_id);
            });
 
   srv.bind("get_files_list",
            [&serv_instance]()
            {
-            cout << "[log] **get_files_list**: request" << endl;
+             LOG_SERVICE("INFO", "GET FILES LIST. request");
              return serv_instance.getFilesList();
            });
 
   srv.bind("get_users_list",
            [&serv_instance]()
            {
-            cout << "[log] **get_users_list**: request" << endl;
+             LOG_SERVICE("INFO", "GET USERS LIST. request");
              return serv_instance.getUserList();
            });
 
   srv.bind("check_access",
-  [&serv_instance](string user_id, string file_id) {
-    return serv_instance.checkAccess(user_id, file_id);
-  });
+           [&serv_instance](string user_id, string file_id) -> bool
+           {
+             LOG_SERVICE("INFO", "CHECK ACCESS: (" + user_id + " , " + file_id + ") ");
+             return serv_instance.checkAccess(user_id, file_id);
+           });
 
-  srv.bind("ping", [&]() -> bool { return true; });
+  srv.bind("ping", [&]() -> bool
+           { 
+    LOG_SERVICE("INFO", "PING Test.");
+    return true; });
 
   // Run the server loop.
-  srv.run();
+  srv.async_run(4);
+
+  // block the shutdown of server by waiting for input
+  string choice;
+  cin >> choice;
 
   return 0;
 }
