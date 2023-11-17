@@ -14,5 +14,7 @@ Server Code for Group1 mini-project submission as a part of CSS501 Lab
     git clone https://github.com/ayushanand18/CSS501_Group1_Server.git
     ```
 
+* All Installation instructions are discussed in details inside `notes/INSTRUCTIONS.md`.
+
 ## Notes
 * All notes in the `notes\` directory.
