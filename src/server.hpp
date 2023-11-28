@@ -277,6 +277,7 @@ std::string FSS_Server::Server::handleDownload(std::string file_id)
 
 bool FSS_Server::Server::startUpload(std::string file_name) {
     system(("mkdir pending_uploads/"+file_name).c_str());
+    return true;
 }
 
 void FSS_Server::Server::handleUpload(std::string name, std::string author, std::string permissions, unsigned int size, std::string content)
