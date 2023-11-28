@@ -102,13 +102,10 @@ namespace FSS_Server
     private:
         std::vector<std::string> server_ips;
         std::unordered_map<std::string, ServerFile> file_table;
-        // unordered_map<std::string, std::string> file_hashes; // maps file_hash->file_id
-        // // own ThreadPool of threads to submit tasks to
-        // ThreadPool thread_exec;
         std::unordered_map<std::string, std::string> user_ids;
 
         // function to get content of a file
-        // conteibuted by @Ajay
+        // contributed by @Ajay
         std::string __getFileContent(std::string filepath);
 
         // function to check user with user_id present or not
@@ -145,8 +142,14 @@ namespace FSS_Server
         // function to handleDownload
         std::string handleDownload(std::string file_id);
 
+        // function to start the partial upload process
+        bool startUpload(std::string file_name);
+
         // function to handleUpload
         void handleUpload(std::string name, std::string author, std::string permissions, unsigned int size, std::string content);
+
+        // function to finish the upload process and reap all the chunks
+        void finishUpload(std::string name, std::string author, std::string permissions, unsigned int size, std::string content);
 
         // function to check if file with the hash is already present on server or not
         // in the file_hashes map
@@ -189,6 +192,7 @@ std::string FSS_Server::Server::__getFileContent(std::string filepath)
 
     return content.str();
 }
+
 bool FSS_Server::Server::__checkUserWithUserID(std::string user_id)
 {
     return user_ids.count(user_id);
@@ -234,6 +238,7 @@ bool FSS_Server::Server::registerWithUserIDPassword(std::string name, std::strin
     }
     return false;
 }
+
 std::unordered_map<std::string, FSS_Server::ServerFile> FSS_Server::Server::getFilesList()
 {
     return this->file_table;
@@ -270,18 +275,26 @@ std::string FSS_Server::Server::handleDownload(std::string file_id)
     }
 }
 
-void FSS_Server::Server::handleUpload(std::string name, std::string author, std::string permissions, unsigned int size, std::string content)
-{
-    // hash the content and generate a fileId
-    std::string file_id = this->__getFileID(content);
-    std::string location_on_disc = "uploaded_files/" + file_id + "-" + name;
-    std::string curr_time = return_current_time_and_date();
+bool FSS_Server::Server::startUpload(std::string file_name) {
+    system(("mkdir pending_uploads/"+file_name).c_str());
+}
 
-    FSS_Server::ServerFile new_file(name, file_id, author, location_on_disc, curr_time, size, 0, permissions);
-    this->file_table[file_id] = new_file;
+void FSS_Server::Server::handleUpload(std::string name, std::string author, std::string permissions, unsigned int size, std::string content)
+{   
+    std::string splitted_name = split(name, "-").front();
+    std::string location_on_disc = "pending_uploads/" + splitted_name + "/" + name;
     std::ofstream write_file(location_on_disc);
     FSS_Server::LOG_SERVICE("INFO", "upload saved at: " + location_on_disc);
     write_file << content;
+}
+
+void FSS_Server::Server::finishUpload(std::string name, std::string author, std::string permissions, unsigned int size, std::string content) {
+    std::string file_id = this->__getFileID(content);
+    std::string location_on_disc = "uploaded_files/" + file_id + "-" + name;
+    std::string curr_time = return_current_time_and_date();
+    FSS_Server::ServerFile new_file(name, file_id, author, location_on_disc, curr_time, size, 0, permissions);
+
+    this->file_table[file_id] = new_file;
 }
 
 bool FSS_Server::Server::checkFilePresent(std::string file_hash)
