@@ -143,13 +143,16 @@ namespace FSS_Server
         std::string handleDownload(std::string file_id);
 
         // function to start the partial upload process
-        bool startUpload(std::string file_name);
+        std::string startUpload(std::string file_name, std::string author);
 
         // function to handleUpload
-        void handleUpload(std::string name, std::string author, std::string permissions, unsigned int size, std::string content);
+        void handleUpload(std::string file_id, std::string file_name, std::string content);
 
         // function to finish the upload process and reap all the chunks
-        void finishUpload(std::string name, std::string author, std::string permissions, unsigned int size, std::string content);
+        void finishUpload(std::string file_id, std::string file_name, std::string author, std::string permissions);
+
+        // function to resume the upload process and send un-uploaded chunks
+        std::vector<std::string> resumeUpload(std::string file_id);
 
         // function to check if file with the hash is already present on server or not
         // in the file_hashes map
@@ -275,27 +278,37 @@ std::string FSS_Server::Server::handleDownload(std::string file_id)
     }
 }
 
-bool FSS_Server::Server::startUpload(std::string file_name) {
+std::string FSS_Server::Server::startUpload(std::string file_name, std::string author) {
+    // WIP: TODO: 
+    // @ayushanand18: need to add start upload necessity things
     system(("mkdir pending_uploads/"+file_name).c_str());
-    return true;
+    return __getFileID(file_name+author+return_current_time_and_date());
 }
 
-void FSS_Server::Server::handleUpload(std::string name, std::string author, std::string permissions, unsigned int size, std::string content)
+void FSS_Server::Server::handleUpload(std::string file_id, std::string file_name, std::string content)
 {   
-    std::string splitted_name = split(name, "-").front();
-    std::string location_on_disc = "pending_uploads/" + splitted_name + "/" + name;
+    // WIP: TODO:
+    // @ayushanand18: need to add chunk handling code here
+    std::string location_on_disc = "pending_uploads/" + file_id + "/" + file_name;
     std::ofstream write_file(location_on_disc);
     FSS_Server::LOG_SERVICE("INFO", "upload saved at: " + location_on_disc);
     write_file << content;
 }
 
-void FSS_Server::Server::finishUpload(std::string name, std::string author, std::string permissions, unsigned int size, std::string content) {
-    std::string file_id = this->__getFileID(content);
-    std::string location_on_disc = "uploaded_files/" + file_id + "-" + name;
+void FSS_Server::Server::finishUpload(std::string file_id, std::string file_name, std::string author, std::string permissions) {
+    // WIP: TODO:
+    // @ayushanand18: need to add finishing up formalities
+
+    // find the folder, combine into one file, and write it onto the destination
+    std::string location_on_disc = "uploaded_files/" + file_id + "-" + file_name;
     std::string curr_time = return_current_time_and_date();
-    FSS_Server::ServerFile new_file(name, file_id, author, location_on_disc, curr_time, size, 0, permissions);
+    FSS_Server::ServerFile new_file(file_name, file_id, author, location_on_disc, curr_time, 100, 0, permissions);
 
     this->file_table[file_id] = new_file;
+}
+
+std::vector<std::string> FSS_Server::Server::resumeUpload(std::string file_id) {
+    // send list of strings of chunk ids not sent
 }
 
 bool FSS_Server::Server::checkFilePresent(std::string file_hash)

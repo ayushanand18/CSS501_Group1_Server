@@ -13,6 +13,7 @@ int main(int argc, char *argv[])
   FSS_Server::Server serv_instance;
 
   FSS_Server::LOG_SERVICE("INFO", "RUNNING: Running server at 8080...");
+  
   // API contracts
   srv.bind("signin",
            [&serv_instance](std::string user_id, std::string password)
@@ -28,29 +29,44 @@ int main(int argc, char *argv[])
              return serv_instance.registerWithUserIDPassword(name, user_id, password);
            });
 
-  srv.bind("upload",
-           [&serv_instance](std::string name, std::string author, std::string permissions, unsigned int size, std::string content)
+  srv.bind("start-upload", [&serv_instance](std::string file_name, std::string author) -> std::string
            {
-             FSS_Server::LOG_SERVICE("INFO", "UPLOAD: request (" + name + ", " + author + ", " + permissions + ", " + std::to_string(size) + ", " + "###)");
-             serv_instance.handleUpload(name, author, permissions, size, content);
+    FSS_Server::LOG_SERVICE("INFO", "Start Upload: request. " + file_name);
+    return serv_instance.startUpload(file_name, author); });
+
+  srv.bind("upload",
+           [&serv_instance](std::string file_id, std::string name, std::string content) -> void
+           {
+             FSS_Server::LOG_SERVICE("INFO", "UPLOAD Chunk: request (" + file_id + ", " + name + ", ###)");
+             serv_instance.handleUpload(file_id, name, content);
            });
 
+  srv.bind("finish-upload", [&serv_instance](std::string file_id, std::string file_name, std::string author, std::string permissions) -> void
+           {
+    FSS_Server::LOG_SERVICE("INFO", "Finished Upload: request. " + file_id);
+    serv_instance.finishUpload(file_id, file_name, author, permissions); });
+
+  srv.bind("resume-upload", [&serv_instance](std::string file_id) -> std::vector<std::string>{
+    FSS_Server::LOG_SERVICE("INFO", "Resume Upload request. " + file_id);
+    return serv_instance.resumeUpload(file_id);
+  });
+
   srv.bind("download",
-           [&serv_instance](std::string file_id)
+           [&serv_instance](std::string file_id) -> std::string
            {
              FSS_Server::LOG_SERVICE("INFO", "DOWNLOAD: (" + file_id + ")");
              return serv_instance.handleDownload(file_id);
            });
 
   srv.bind("get_files_list",
-           [&serv_instance]()
+           [&serv_instance]() -> std::unordered_map<std::string, FSS_Server::ServerFile>
            {
              FSS_Server::LOG_SERVICE("INFO", "GET FILES LIST. request");
              return serv_instance.getFilesList();
            });
 
   srv.bind("get_users_list",
-           [&serv_instance]()
+           [&serv_instance]() -> std::vector<std::pair<std::string, std::string>>
            {
              FSS_Server::LOG_SERVICE("INFO", "GET USERS LIST. request");
              return serv_instance.getUserList();
