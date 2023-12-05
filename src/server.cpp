@@ -13,7 +13,7 @@ int main(int argc, char *argv[])
   FSS_Server::Server serv_instance;
 
   FSS_Server::LOG_SERVICE("INFO", "RUNNING: Running server at 8080...");
-  
+
   // API contracts
   srv.bind("signin",
            [&serv_instance](std::string user_id, std::string password)
@@ -29,10 +29,12 @@ int main(int argc, char *argv[])
              return serv_instance.registerWithUserIDPassword(name, user_id, password);
            });
 
-  srv.bind("start-upload", [&serv_instance](std::string file_name, std::string author) -> std::string
+  srv.bind("start-upload",
+           [&serv_instance](std::string file_name, std::string author) -> std::string
            {
-    FSS_Server::LOG_SERVICE("INFO", "Start Upload: request. " + file_name);
-    return serv_instance.startUpload(file_name, author); });
+             FSS_Server::LOG_SERVICE("INFO", "Start Upload: request. " + file_name);
+             return serv_instance.startUpload(file_name, author);
+           });
 
   srv.bind("upload",
            [&serv_instance](std::string file_id, std::string name, std::string content) -> void
@@ -41,15 +43,19 @@ int main(int argc, char *argv[])
              serv_instance.handleUpload(file_id, name, content);
            });
 
-  srv.bind("finish-upload", [&serv_instance](std::string file_id, std::string file_name, std::string author, std::string permissions) -> void
+  srv.bind("finish-upload",
+           [&serv_instance](std::string file_id, std::string file_name, std::string author, std::string permissions) -> bool
            {
-    FSS_Server::LOG_SERVICE("INFO", "Finished Upload: request. " + file_id);
-    serv_instance.finishUpload(file_id, file_name, author, permissions); });
+             FSS_Server::LOG_SERVICE("INFO", "Finished Upload: request. " + file_id);
+             return serv_instance.finishUpload(file_id, file_name, author, permissions);
+           });
 
-  srv.bind("resume-upload", [&serv_instance](std::string file_id) -> std::vector<std::string>{
-    FSS_Server::LOG_SERVICE("INFO", "Resume Upload request. " + file_id);
-    return serv_instance.resumeUpload(file_id);
-  });
+  srv.bind("resume-upload",
+           [&serv_instance](std::string file_id) -> std::vector<std::string>
+           {
+             FSS_Server::LOG_SERVICE("INFO", "Resume Upload request. " + file_id);
+             return serv_instance.resumeUpload(file_id);
+           });
 
   srv.bind("download",
            [&serv_instance](std::string file_id) -> std::string
