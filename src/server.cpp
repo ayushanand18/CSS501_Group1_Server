@@ -36,6 +36,13 @@ int main(int argc, char *argv[])
              return serv_instance.startUpload(file_name, author);
            });
 
+  srv.bind("check-upload",
+           [&serv_instance](std::string file_id) -> std::pair<bool, std::vector<std::string>>
+           {
+             FSS_Server::LOG_SERVICE("INFO", "Resume Upload: request. " + file_id);
+             return serv_instance.resumeUpload(file_id);
+           });
+
   srv.bind("upload",
            [&serv_instance](std::string file_id, std::string name, std::string content) -> void
            {
@@ -48,13 +55,6 @@ int main(int argc, char *argv[])
            {
              FSS_Server::LOG_SERVICE("INFO", "Finished Upload: request. " + file_id);
              return serv_instance.finishUpload(file_id, file_name, author, permissions);
-           });
-
-  srv.bind("resume-upload",
-           [&serv_instance](std::string file_id) -> std::vector<std::string>
-           {
-             FSS_Server::LOG_SERVICE("INFO", "Resume Upload request. " + file_id);
-             return serv_instance.resumeUpload(file_id);
            });
 
   srv.bind("download",

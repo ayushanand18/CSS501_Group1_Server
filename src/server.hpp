@@ -7,7 +7,7 @@
 #include <functional>
 #include <fstream>
 #include <utility>
-#include <openssl/md5.h>
+#include <openssl/evp.h>
 #include <msgpack.hpp>
 #include <dirent.h>
 #include <numeric>
@@ -157,7 +157,7 @@ namespace FSS_Server
         bool finishUpload(std::string file_id, std::string file_name, std::string author, std::string permissions);
 
         // function to resume the upload process and send un-uploaded chunks
-        std::vector<std::string> resumeUpload(std::string file_id);
+        std::pair<bool, std::vector<std::string>> resumeUpload(std::string file_id);
 
         // function to check if file with the hash is already present on server or not
         // in the file_hashes map
@@ -223,19 +223,31 @@ bool FSS_Server::Server::__checkUserWithUserID(std::string user_id)
 
 std::string FSS_Server::Server::__getFileID(std::string input)
 {
-    unsigned char digest[MD5_DIGEST_LENGTH];
-    MD5((const unsigned char *)input.c_str(), input.length(), digest);
+    EVP_MD_CTX *mdctx;
+    const EVP_MD *md = EVP_md5();
+    unsigned int md_len;
+    unsigned char digest[EVP_MAX_MD_SIZE];
+
+    mdctx = EVP_MD_CTX_new();
+
+    EVP_DigestInit_ex(mdctx, md, nullptr);
+    EVP_DigestUpdate(mdctx, input.c_str(), input.length());
+    EVP_DigestFinal_ex(mdctx, digest, &md_len);
+
+    EVP_MD_CTX_free(mdctx);
 
     std::stringstream ss;
-    for (int i = 0; i < MD5_DIGEST_LENGTH; i++)
+    for (unsigned int i = 0; i < md_len; i++)
     {
         ss << std::hex << std::setw(2) << std::setfill('0') << (int)digest[i];
     }
+
     std::string res_file_id = ss.str();
     if (res_file_id.size() > 20)
     {
         res_file_id = res_file_id.substr(0, 20);
     }
+
     return res_file_id;
 }
 
@@ -354,9 +366,28 @@ bool FSS_Server::Server::finishUpload(std::string file_id, std::string file_name
     return true;
 }
 
-std::vector<std::string> FSS_Server::Server::resumeUpload(std::string file_id) {
-    // send list of strings of chunk ids not sent
-    return {};
+std::pair<bool, std::vector<std::string>> FSS_Server::Server::resumeUpload(std::string file_id) {
+    // send list of strings of chunk ids received
+    std::string folder_name = "pending_uploads/"+file_id;
+    DIR *d;
+    struct dirent *dir;
+
+    // did not find a match in already uploaded files,
+    // so send those chunk names which are received
+    std::vector<std::string> file_chunks;
+    
+    d = opendir(folder_name.c_str());
+    if (d) {
+        while ((dir = readdir(d)) != NULL) {
+            if(dir->d_name[0] == '.') continue;
+            file_chunks.push_back(dir->d_name);
+        }
+        closedir(d);
+    } else {
+        return make_pair(false, std::vector<std::string>());
+    }
+    
+    return make_pair(true, file_chunks);
 }
 
 bool FSS_Server::Server::checkFilePresent(std::string file_hash)
