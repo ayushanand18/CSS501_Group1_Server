@@ -183,7 +183,6 @@ FSS_Server::Server::Server()
 
     // also update from list of files
     std::ifstream files_db("fileslist_db.txt");
-    std::string line;
     while(std::getline(files_db, line))
     {
         std::vector<std::string> splitted = split(line, " ");
