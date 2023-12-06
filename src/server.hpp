@@ -180,6 +180,16 @@ FSS_Server::Server::Server()
         // name user_id passwd <- user_db.txt file
         user_ids[splitted[1]] = splitted[2];
     }
+
+    // also update from list of files
+    std::ifstream files_db("fileslist_db.txt");
+    std::string line;
+    while(std::getline(files_db, line))
+    {
+        std::vector<std::string> splitted = split(line, " ");
+        FSS_Server::ServerFile new_file(splitted[1], splitted[0], splitted[2], splitted[3], splitted[4], stoi(splitted[5]), stoi(splitted[6]), splitted[7]);
+        file_table[splitted[0]] = new_file;
+    }
 }
 
 unsigned int FSS_Server::Server::__getFileSize(std::string filepath) {
@@ -404,5 +414,14 @@ bool FSS_Server::Server::checkAccess(std::string user_id, std::string file_id)
 }
 
 FSS_Server::Server::~Server() {
+    // ServerFile(const std::string name, const std::string file_id, const std::string author, const std::string location_on_disc, const std::string last_update_time, const size_t size, const unsigned int num_downloads, std::string access_to)
+    std::ofstream files_db("fileslist_d.txt");
+    for(auto& [file_id, file_data]: file_table) 
+    {
+        files_db << file_id << " " << file_data.name << " " << file_data.author << " "
+                << file_data.location_on_disc << " " << file_data.last_update_time << " " 
+                << file_data.size << " " << file_data.num_downloads << " " << file_data.access_to;
+    }
+
     LOG_SERVICE("INFO", "SHUTDOWN\n");
 }
