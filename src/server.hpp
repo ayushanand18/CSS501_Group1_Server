@@ -7,8 +7,10 @@
 #include <functional>
 #include <fstream>
 #include <utility>
-#include <openssl/md5.h>
+#include <openssl/evp.h>
 #include <msgpack.hpp>
+#include <dirent.h>
+#include <numeric>
 #include "rpc/server.h"
 
 namespace FSS_Server
@@ -108,6 +110,9 @@ namespace FSS_Server
         // contributed by @Ajay
         std::string __getFileContent(std::string filepath);
 
+        // function to get file size
+        unsigned int __getFileSize(std::string filepath);
+
         // function to check user with user_id present or not
         bool __checkUserWithUserID(std::string user_id);
 
@@ -143,13 +148,16 @@ namespace FSS_Server
         std::string handleDownload(std::string file_id);
 
         // function to start the partial upload process
-        bool startUpload(std::string file_name);
+        std::string startUpload(std::string file_name, std::string author);
 
         // function to handleUpload
-        void handleUpload(std::string name, std::string author, std::string permissions, unsigned int size, std::string content);
+        void handleUpload(std::string file_id, std::string file_name, std::string content);
 
         // function to finish the upload process and reap all the chunks
-        void finishUpload(std::string name, std::string author, std::string permissions, unsigned int size, std::string content);
+        bool finishUpload(std::string file_id, std::string file_name, std::string author, std::string permissions);
+
+        // function to resume the upload process and send un-uploaded chunks
+        std::pair<bool, std::vector<std::string>> resumeUpload(std::string file_id);
 
         // function to check if file with the hash is already present on server or not
         // in the file_hashes map
@@ -172,6 +180,21 @@ FSS_Server::Server::Server()
         // name user_id passwd <- user_db.txt file
         user_ids[splitted[1]] = splitted[2];
     }
+}
+
+unsigned int FSS_Server::Server::__getFileSize(std::string filepath) {
+    std::ifstream file(filepath, std::ios::binary);
+    unsigned int file_size = 0;
+    if (file.is_open())
+    {
+        file.seekg(0, std::ios::end);                      // Move to the end of the file
+        file_size = static_cast<std::size_t>(file.tellg()); // Get the file size
+    }
+    else
+    {
+        throw std::runtime_error("Unable to open file: " + filepath);
+    }
+    return file_size;
 }
 
 std::string FSS_Server::Server::__getFileContent(std::string filepath)
@@ -200,19 +223,31 @@ bool FSS_Server::Server::__checkUserWithUserID(std::string user_id)
 
 std::string FSS_Server::Server::__getFileID(std::string input)
 {
-    unsigned char digest[MD5_DIGEST_LENGTH];
-    MD5((const unsigned char *)input.c_str(), input.length(), digest);
+    EVP_MD_CTX *mdctx;
+    const EVP_MD *md = EVP_md5();
+    unsigned int md_len;
+    unsigned char digest[EVP_MAX_MD_SIZE];
+
+    mdctx = EVP_MD_CTX_new();
+
+    EVP_DigestInit_ex(mdctx, md, nullptr);
+    EVP_DigestUpdate(mdctx, input.c_str(), input.length());
+    EVP_DigestFinal_ex(mdctx, digest, &md_len);
+
+    EVP_MD_CTX_free(mdctx);
 
     std::stringstream ss;
-    for (int i = 0; i < MD5_DIGEST_LENGTH; i++)
+    for (unsigned int i = 0; i < md_len; i++)
     {
         ss << std::hex << std::setw(2) << std::setfill('0') << (int)digest[i];
     }
+
     std::string res_file_id = ss.str();
     if (res_file_id.size() > 20)
     {
         res_file_id = res_file_id.substr(0, 20);
     }
+
     return res_file_id;
 }
 
@@ -275,27 +310,84 @@ std::string FSS_Server::Server::handleDownload(std::string file_id)
     }
 }
 
-bool FSS_Server::Server::startUpload(std::string file_name) {
-    system(("mkdir pending_uploads/"+file_name).c_str());
-    return true;
+std::string FSS_Server::Server::startUpload(std::string file_name, std::string author) {
+    // function to handle start of upload process
+    // get the file id from name and author, and make a direc
+    std::string file_id = __getFileID(file_name+author);
+    // create a new direc in pending_uploads/
+    system(("mkdir pending_uploads/"+file_id).c_str());
+    // return the new file_id
+    return file_id;
 }
 
-void FSS_Server::Server::handleUpload(std::string name, std::string author, std::string permissions, unsigned int size, std::string content)
+void FSS_Server::Server::handleUpload(std::string file_id, std::string file_name, std::string content)
 {   
-    std::string splitted_name = split(name, "-").front();
-    std::string location_on_disc = "pending_uploads/" + splitted_name + "/" + name;
+    std::string location_on_disc = "pending_uploads/" + file_id + "/" + file_name;
     std::ofstream write_file(location_on_disc);
     FSS_Server::LOG_SERVICE("INFO", "upload saved at: " + location_on_disc);
     write_file << content;
 }
 
-void FSS_Server::Server::finishUpload(std::string name, std::string author, std::string permissions, unsigned int size, std::string content) {
-    std::string file_id = this->__getFileID(content);
-    std::string location_on_disc = "uploaded_files/" + file_id + "-" + name;
+bool FSS_Server::Server::finishUpload(std::string file_id, std::string file_name, std::string author, std::string permissions) {
+    // find the folder, combine into one file, and write it onto the destination
+    std::string folder_name = "pending_uploads/"+file_id;
+    std::vector<std::string> file_chunks;
+    unsigned int file_size = 0;
+
+    // get the list of files
+    DIR *d;
+    struct dirent *dir;
+    d = opendir(folder_name.c_str());
+    if (d) {
+        while ((dir = readdir(d)) != NULL) {
+            if(dir->d_name[0] == '.') continue;
+            file_chunks.push_back(dir->d_name);
+            file_size += __getFileSize(folder_name+"/"+dir->d_name);
+        }
+        closedir(d);
+    }
+
+    std::string file_concats = std::accumulate(file_chunks.begin()+1, file_chunks.end(), folder_name + "/" + file_chunks[0], [&folder_name](const std::string& a, const std::string& b){
+        return a  + " " + folder_name + "/" + b;
+    });
+
+    // combine into one single file
+    std::string location_on_disc = "uploaded_files/"+file_id + "-" + file_name;
+    system(("cat " + file_concats + " > " + location_on_disc).c_str());
     std::string curr_time = return_current_time_and_date();
-    FSS_Server::ServerFile new_file(name, file_id, author, location_on_disc, curr_time, size, 0, permissions);
+
+    // now delete all those files after combining
+    system(("rm -rf " + folder_name).c_str());
+
+    FSS_Server::ServerFile new_file(file_name, file_id, author, location_on_disc, curr_time, file_size, 0, permissions);
 
     this->file_table[file_id] = new_file;
+    
+    return true;
+}
+
+std::pair<bool, std::vector<std::string>> FSS_Server::Server::resumeUpload(std::string file_id) {
+    // send list of strings of chunk ids received
+    std::string folder_name = "pending_uploads/"+file_id;
+    DIR *d;
+    struct dirent *dir;
+
+    // did not find a match in already uploaded files,
+    // so send those chunk names which are received
+    std::vector<std::string> file_chunks;
+    
+    d = opendir(folder_name.c_str());
+    if (d) {
+        while ((dir = readdir(d)) != NULL) {
+            if(dir->d_name[0] == '.') continue;
+            file_chunks.push_back(dir->d_name);
+        }
+        closedir(d);
+    } else {
+        return make_pair(false, std::vector<std::string>());
+    }
+    
+    return make_pair(true, file_chunks);
 }
 
 bool FSS_Server::Server::checkFilePresent(std::string file_hash)
